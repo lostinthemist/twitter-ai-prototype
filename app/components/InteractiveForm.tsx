@@ -101,7 +101,7 @@ export default function InteractiveForm() {
         {tweet && (
           <Card className="mt-6 bg-transparent border-gray-800">
             <CardContent className="pt-6 pb-4 space-y-4 text-center bg-gray-700">
-              <p className="text-lg text-white text-left">{tweet}</p>
+              <p className="text-base md:text-lg text-white text-left">{tweet}</p>
               <div className="flex justify-end gap-4 mt-4">
                 <Button
                   onClick={handleCopy}

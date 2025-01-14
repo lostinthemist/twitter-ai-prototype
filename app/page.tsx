@@ -18,10 +18,10 @@ export default function Home() {
           >
             Tweet Gemirator
           </TextAnimate>
-          <p className="text-white text-center text-lg sm:text-base md:text-base lg:text-xl xl:text-xl mt-4">
+          <p className="text-white text-center text-sm sm:text-base lg:text-xl xl:text-xl mt-4">
           Meet Tweet Gemirator (Gemini + Generator) - Gemini AI-powered application built with Next.js and TailwindCSS.
           </p>
-          <p className="text-white text-center text-lg sm:text-base md:text-base lg:text-xl xl:text-xl mt-4">
+          <p className="text-white text-center text-sm sm:text-base lg:text-xl xl:text-xl mt-4">
           This prototype app will help you out when you have an idea for a tweet, but you're not sure how to write a tweet or how to convey your thoughts. Simply enter a description and Tweet Gemirator will generate tweets based on user descriptions.
           </p>
           <InteractiveForm />
