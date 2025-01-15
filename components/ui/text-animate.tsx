@@ -8,8 +8,6 @@ type AnimationType = "text" | "word" | "character" | "line";
 type AnimationVariant =
   | "fadeIn"
   | "blurIn"
-  | "blurInUp"
-  | "blurInDown"
   | "slideUp"
   | "slideDown"
   | "slideLeft"
@@ -138,48 +136,6 @@ const defaultItemAnimationVariants: Record<
         filter: "blur(10px)",
         transition: { duration: 0.3 },
       },
-    },
-  },
-  blurInUp: {
-    container: defaultContainerVariants,
-    item: {
-      hidden: { opacity: 0, filter: "blur(10px)", y: 20 },
-      show: (delay: number) => ({
-        opacity: 1,
-        filter: "blur(0px)",
-        y: 0,
-        transition: {
-          y: { duration: 0.3 },
-          opacity: { duration: 0.4 },
-          filter: { duration: 0.3 },
-        },
-      }),
-      exit: {
-        opacity: 0,
-        filter: "blur(10px)",
-        y: 20,
-        transition: {
-          y: { duration: 0.3 },
-          opacity: { duration: 0.4 },
-          filter: { duration: 0.3 },
-        },
-      },
-    },
-  },
-  blurInDown: {
-    container: defaultContainerVariants,
-    item: {
-      hidden: { opacity: 0, filter: "blur(10px)", y: -20 },
-      show: (delay: number) => ({
-        opacity: 1,
-        filter: "blur(0px)",
-        y: 0,
-        transition: {
-          y: { duration: 0.3 },
-          opacity: { duration: 0.4 },
-          filter: { duration: 0.3 },
-        },
-      }),
     },
   },
   slideUp: {
@@ -316,6 +272,11 @@ export function TextAnimate({
 }: Readonly<TextAnimateProps>) {
   const MotionComponent = motion.create(Component);
 
+  void delay;
+  void duration;
+  void variants;
+  void once;
+
   // Use provided variants or default variants based on animation type
   const finalVariants = animation
     ? {
@@ -374,7 +335,7 @@ export function TextAnimate({
             custom={i * staggerTimings[by]}
             className={cn(
               by === "line" ? "block" : "inline-block whitespace-pre",
-              segmentClassName,
+              segmentClassName
             )}
           >
             {segment}

@@ -13,9 +13,10 @@ export default function InteractiveForm() {
   const [history, setHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const description = e.target.description.value;
+    const form = e.target as HTMLFormElement;
+    const description = form.description.value;
     setLoading(true);
 
     const response = await fetch("/api/submit", {
@@ -84,7 +85,7 @@ export default function InteractiveForm() {
               id="description"
               name="description"
               placeholder="Write your thoughts here..."
-              className="min-h-[200px] bg-transparent text-lg resize-none text-white 2xl:text-xl"
+              className="min-h-[200px] bg-transparent text-base resize-none text-white lg:text-xl"
               disabled={loading}
             />
             <Button
