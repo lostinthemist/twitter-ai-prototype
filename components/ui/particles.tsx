@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { base } from "framer-motion/client";
 import React, { useEffect, useRef, useState } from "react";
 
 interface MousePosition {
@@ -78,7 +77,7 @@ type Circle = {
 
 const ParticlesBackground: React.FC<ParticlesProps> = ({
   className = "",
-  quantity = 100,
+  quantity = 60,
   staticity = 50,
   ease = 50,
   size = 0.4,
@@ -96,11 +95,44 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
   const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
   const rafID = useRef<number | null>(null);
-  const resizeTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  function debounce(func: () => void, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(func, wait);
+    };
+  }
+
+  const debouncedResizeCanvas = debounce(() => {
+    if (canvasContainerRef.current && canvasRef.current && context.current) {
+      const prevWidth = canvasSize.current.w;
+      const prevHeight = canvasSize.current.h;
+  
+      // Update canvas size
+      canvasSize.current.w = canvasContainerRef.current.offsetWidth;
+      canvasSize.current.h = canvasContainerRef.current.offsetHeight;
+  
+      canvasRef.current.width = canvasSize.current.w * dpr;
+      canvasRef.current.height = canvasSize.current.h * dpr;
+      canvasRef.current.style.width = `${canvasSize.current.w}px`;
+      canvasRef.current.style.height = `${canvasSize.current.h}px`;
+      context.current.scale(dpr, dpr);
+  
+      // Add new particles ONLY if the canvas has grown
+      if (canvasSize.current.w > prevWidth || canvasSize.current.h > prevHeight) {
+        const additionalParticles = Math.floor((canvasSize.current.w * canvasSize.current.h - prevWidth * prevHeight) / 10000);
+        for (let i = 0; i < additionalParticles; i++) {
+          const circle = circleParams();
+          drawCircle(circle);
+        }
+      }
+    }
+  }, 200);
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
-      resizeCanvas();
+      debouncedResizeCanvas();
     });
 
     if (canvasContainerRef.current) {
@@ -108,7 +140,7 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
     }
 
     return () => observer.disconnect();
-  }, []);
+  });
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -117,13 +149,13 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
     initCanvas();
     animate();
 
-    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("resize", debouncedResizeCanvas);
 
     return () => {
       if (rafID.current != null) {
         window.cancelAnimationFrame(rafID.current);
       }
-      window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("resize", debouncedResizeCanvas);
     };
   }, [color]);
 
@@ -156,26 +188,52 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
   //   };
   // }, [color]);
 
+  // useEffect(() => {
+  //   onMouseMove();
+  // }, [mousePosition.x, mousePosition.y]);
+
   useEffect(() => {
-    onMouseMove();
-  }, [mousePosition.x, mousePosition.y]);
+    window.addEventListener("mousemove", onMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+    };
+  }, []);
 
   useEffect(() => {
     initCanvas();
   }, [refresh]);
 
   const initCanvas = () => {
-    resizeCanvas();
+    debouncedResizeCanvas();
     drawParticles();
   };
 
-  const onMouseMove = () => {
+  // const onMouseMove = () => {
+  //   if (canvasRef.current) {
+  //     const rect = canvasRef.current.getBoundingClientRect();
+  //     const { w, h } = canvasSize.current;
+  //     const x = mousePosition.x - rect.left - w / 2;
+  //     const y = mousePosition.y - rect.top - h / 2;
+  //     const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;
+  //     if (inside) {
+  //       mouse.current.x = x;
+  //       mouse.current.y = y;
+  //     }
+  //   }
+  // };
+
+  const onMouseMove = (event: MouseEvent) => {
     if (canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const { w, h } = canvasSize.current;
-      const x = mousePosition.x - rect.left - w / 2;
-      const y = mousePosition.y - rect.top - h / 2;
+
+      // Normalize the mouse position
+      const x = event.clientX - rect.left - w / 2;
+      const y = event.clientY - rect.top - h / 2;
+
       const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;
+
       if (inside) {
         mouse.current.x = x;
         mouse.current.y = y;
@@ -183,29 +241,9 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
     }
   };
 
-  const resizeCanvas = () => {
-    if (canvasContainerRef.current && canvasRef.current && context.current) {
-      canvasSize.current.w = canvasContainerRef.current.offsetWidth;
-      canvasSize.current.h = canvasContainerRef.current.offsetHeight;
-
-      canvasRef.current.width = canvasSize.current.w * dpr;
-      canvasRef.current.height = canvasSize.current.h * dpr;
-      canvasRef.current.style.width = `${canvasSize.current.w}px`;
-      canvasRef.current.style.height = `${canvasSize.current.h}px`;
-      context.current.scale(dpr, dpr);
-
-      // Clear existing particles and create new ones with exact quantity
-      circles.current = [];
-      for (let i = 0; i < quantity; i++) {
-        const circle = circleParams();
-        drawCircle(circle);
-      }
-    }
-  };
-
   const circleParams = (): Circle => {
-    const x = Math.floor(Math.random() * canvasSize.current.w);
-    const y = Math.floor(Math.random() * canvasSize.current.h);
+    const x = Math.floor(Math.random() * (canvasSize.current.w || 1));
+    const y = Math.floor(Math.random() * (canvasSize.current.h || 1));
     const translateX = 0;
     const translateY = 0;
     const pSize = Math.floor(Math.random() * 2) + size;
@@ -232,7 +270,7 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
       baseSize,
       expanding,
       growthRate,
-      maxSize
+      maxSize,
     };
   };
 
@@ -260,7 +298,7 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
         0,
         0,
         canvasSize.current.w,
-        canvasSize.current.h,
+        canvasSize.current.h
       );
     }
   };
@@ -279,7 +317,7 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
     start1: number,
     end1: number,
     start2: number,
-    end2: number,
+    end2: number
   ): number => {
     const remapped =
       ((value - start1) * (end2 - start2)) / (end1 - start1) + start2;
@@ -310,12 +348,9 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
 
       circle.x += circle.dx + vx;
       circle.y += circle.dy + vy;
-      circle.translateX +=
-        (mouse.current.x / (staticity / circle.magnetism) - circle.translateX) /
-        ease;
-      circle.translateY +=
-        (mouse.current.y / (staticity / circle.magnetism) - circle.translateY) /
-        ease;
+      circle.translateX += (mouse.current.x / (staticity / circle.magnetism) - circle.translateX) / ease;
+circle.translateY += (mouse.current.y / (staticity / circle.magnetism) - circle.translateY) / ease;
+
 
       circle.expanding
         ? (circle.size += circle.growthRate)
@@ -332,7 +367,35 @@ const ParticlesBackground: React.FC<ParticlesProps> = ({
         circle.y > canvasSize.current.h + circle.size
       ) {
         circles.current.splice(i, 1);
-        const newCircle = circleParams();
+      
+        // FIX: Respawn particles more naturally around canvas edges
+        const edge = Math.floor(Math.random() * 4);
+        let x, y;
+      
+        if (edge === 0) {
+          // Spawn from the top edge
+          x = Math.random() * canvasSize.current.w;
+          y = -circle.size;
+        } else if (edge === 1) {
+          // Spawn from the bottom edge
+          x = Math.random() * canvasSize.current.w;
+          y = canvasSize.current.h + circle.size;
+        } else if (edge === 2) {
+          // Spawn from the left edge
+          x = -circle.size;
+          y = Math.random() * canvasSize.current.h;
+        } else {
+          // Spawn from the right edge
+          x = canvasSize.current.w + circle.size;
+          y = Math.random() * canvasSize.current.h;
+        }
+      
+        // Create a new particle at the edge
+        const newCircle = {
+          ...circleParams(),
+          x,
+          y,
+        };
         drawCircle(newCircle);
       }
     });
